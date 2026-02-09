@@ -1,2 +1,2 @@
 # youtubechannel
-Extract channel informations and thumbnail/banner images
+Extract Youtube channel informations and thumbnail/banner images
