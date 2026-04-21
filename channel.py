@@ -14,9 +14,15 @@ class Program():
         self.youtubeKey = youtubeKey
         self.tzinfo = ZoneInfo(tz)
         self.dateFormats = dateFormats
+        self.loggingfile = None
+        self.resultfile = None
         
+        self.start()
+        
+    def start(self):
         self.initLoggingFile()
-        self.initResultFile()
+        print("Starting program")
+        self.writelog("Starting program")
             
     def initLoggingFile(self):
         loggingfilename = "channel_" + self.idchannel
@@ -60,15 +66,14 @@ class Program():
     def clean(self):
         try:
             # Close Files
-            self.loggingfile.close()
-            self.resultfile.close()
+            if self.loggingfile is not None:
+                self.loggingfile.close()
+            if self.resultfile is not None:    
+                self.resultfile.close()
         except Exception as e:
             print("Error cleaning up : " + str(e))
     
     def main(self):
-        print("Starting program")
-        self.writelog("Starting program")
-
         # Get infos of channel
         channelInfosURL = "https://www.googleapis.com/youtube/v3/channels?key=" + self.youtubeKey + "&id=" + self.idchannel + "&part=brandingSettings,contentDetails,contentOwnerDetails,id,localizations,snippet,statistics,status,topicDetails"
         print(channelInfosURL)
@@ -77,6 +82,11 @@ class Program():
             if response.status_code == 200:
                 channelInfosResponse = response.text
                 channel_json = json.loads(channelInfosResponse)
+
+                if channel_json.get('pageInfo').get('totalResults') == 0:
+                    print(f"[×] channel={self.idchannel} Error channelInfosURL {channelInfosURL} : channel not found")
+                    self.writelog(f"[×] channel={self.idchannel} Error channelInfosURL {channelInfosURL} : channel not found")
+                    self.exitProgram()                
             else:
                 print(f"[×] channel={self.idchannel} Response of channelInfosURL {channelInfosURL} isn't OK : {response.status_code} {response.text}")
                 self.writelog(f"[×] channel={self.idchannel} Response of channelInfosURL {channelInfosURL} isn't OK : {response.status_code} {response.text}")
@@ -85,7 +95,9 @@ class Program():
             print(f"[×] channel={self.idchannel} Error channelInfosURL {channelInfosURL} : {e}")
             self.writelog(f"[×] channel={self.idchannel} Error channelInfosURL {channelInfosURL} : {e}")
             self.exitProgram()
-                
+              
+        self.initResultFile()
+              
         item = channel_json.get('items')[0]
         snippet = item.get('snippet')
         handle = snippet.get('customUrl')[1:len(snippet.get('customUrl'))]
@@ -145,7 +157,7 @@ class Program():
         subscriberCount = stats.get('subscriberCount')
         videoCount = stats.get('videoCount')
 
-        self.writeresult("Channel " + self.urlchannel + " id : " + self.idchannel)
+        self.writeresult("Chaine " + self.urlchannel + " id : " + self.idchannel)
         self.writeresult("\n\n")
 
         print("Title : " + title)
