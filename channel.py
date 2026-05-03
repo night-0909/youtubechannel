@@ -8,11 +8,12 @@ import requests, json
 from zoneinfo import ZoneInfo
 
 class Program():
-    def __init__(self, idchannel, urlchannel, youtubeKey, tz, dateFormats):
+    def __init__(self, idchannel, urlchannel, youtubeKey, tz, output_dirs, dateFormats):
         self.idchannel = idchannel
         self.urlchannel = urlchannel
         self.youtubeKey = youtubeKey
         self.tzinfo = ZoneInfo(tz)
+        self.output_dirs = output_dirs
         self.dateFormats = dateFormats
         self.loggingfile = None
         self.resultfile = None
@@ -25,13 +26,22 @@ class Program():
         self.writelog("Starting program")
             
     def initLoggingFile(self):
-        loggingfilename = "channel_" + self.idchannel
-        self.loggingfile = open(loggingfilename + ".log", "a", encoding="utf-8")
+        loggingfilename = self.output_dirs['log_file'] + "channel_" + self.idchannel + ".log"
+        try:
+            self.loggingfile = open(loggingfilename, "a", encoding="utf-8")
+        except Exception as e:
+            print(e)
+            self.exitProgram()
     
     def initResultFile(self):
         dateNow = self.getDateNow()
-        resultfilename = "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + ".txt"
-        self.resultfile = open(resultfilename, "w", encoding="utf-8")
+        resultfilename = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] +  ".txt"
+        try:
+            self.resultfile = open(resultfilename, "w", encoding="utf-8")
+        except Exception as e:
+            print(e)
+            self.exitProgram()
+    
     
     def getDateNow(self):
         timestamp_now = datetime.now().timestamp()
@@ -57,8 +67,12 @@ class Program():
 
     # Used when errors/exceptions occured and when we want to exit right now
     def exitProgram(self):
-        self.writelog("Execution had errors")
-        self.writelog("Ending program")
+        try:
+            self.writelog("Execution had errors")
+            self.writelog("Ending program")
+        except Exception as e:
+            print(e)
+
         self.clean()
         sys.exit(1)
     
@@ -102,6 +116,8 @@ class Program():
         snippet = item.get('snippet')
         handle = snippet.get('customUrl')[1:len(snippet.get('customUrl'))]
         self.urlchannel = "https://www.youtube.com/@"  + handle
+        
+        self.writelog("Channel " + self.urlchannel + " id : " + self.idchannel)
 
         dateChannel = snippet.get('publishedAt')
         dateChannel_object = dateutil.parser.isoparse(dateChannel)
@@ -116,7 +132,7 @@ class Program():
             response = requests.get(thumbnail_url, stream = True)
             if response.status_code == 200:
                 thumbnailInfosResponse = response.content
-                filethumbnail = "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_thumbnail.jpeg"
+                filethumbnail = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_thumbnail.jpeg"
                 fthumbnail = open(filethumbnail, "wb")
                 fthumbnail.write(thumbnailInfosResponse)
                 fthumbnail.close()
@@ -136,7 +152,7 @@ class Program():
                 response = requests.get(bannerExternalUrl, stream = True)
                 if response.status_code == 200:
                     bannerInfosResponse = response.content
-                    filebanner = "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_banner.jpeg"
+                    filebanner = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_banner.jpeg"
                     fbanner = open(filebanner, "wb")
                     fbanner.write(bannerInfosResponse)
                     fbanner.close()
@@ -157,7 +173,7 @@ class Program():
         subscriberCount = stats.get('subscriberCount')
         videoCount = stats.get('videoCount')
 
-        self.writeresult("Chaine " + self.urlchannel + " id : " + self.idchannel)
+        self.writeresult("Channel " + self.urlchannel + " id : " + self.idchannel)
         self.writeresult("\n\n")
 
         print("Title : " + title)
@@ -186,6 +202,10 @@ class Program():
         self.clean()
 
 if __name__ == "__main__":
+    # Paths
+    output_dirs = {'log_file': "",
+                   'result_file': ""
+    }    
     # Youtube
     urlchannel = "https://www.youtube.com/@your_channel"
     idchannel = '' # Found channel id on Youtube by clicking "Share channel" then "Copy channel ID"
@@ -195,7 +215,6 @@ if __name__ == "__main__":
     dateFormats = {"dateString": "%d/%m/%Y %H:%M:%S", "dateDBString": "%Y-%m-%d %H:%M:%S", "dateFileString": "%d%m%Y%H%M%S"}
 
     # Launch
-    program = Program(idchannel, urlchannel, youtubeKey, tz, dateFormats)
+    program = Program(idchannel, urlchannel, youtubeKey, tz, output_dirs, dateFormats)
     program.main()
     
-
