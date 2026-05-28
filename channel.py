@@ -3,8 +3,9 @@
 import scrapetube
 from datetime import datetime
 import dateutil.parser
-import sys
+import sys, os
 import requests, json
+import magic, mimetypes
 from zoneinfo import ZoneInfo
 
 class Program():
@@ -132,10 +133,22 @@ class Program():
             response = requests.get(thumbnail_url, stream = True)
             if response.status_code == 200:
                 thumbnailInfosResponse = response.content
-                filethumbnail = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_thumbnail.jpeg"
+
+                # Download file without extension
+                filethumbnail = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_thumbnail"
                 fthumbnail = open(filethumbnail, "wb")
                 fthumbnail.write(thumbnailInfosResponse)
                 fthumbnail.close()
+
+                # Guess mimetype, guess file extension then rename file with extension
+                fileMimetype = magic.from_file(filethumbnail, mime=True)
+                fileExtension = mimetypes.guess_extension(fileMimetype)
+                if fileExtension is not None:
+                    newfilethumbnail = filethumbnail + fileExtension
+                    os.rename(filethumbnail, newfilethumbnail)
+                else:
+                    print(f"[×] idchannel={self.idchannel} filethumbnail={filethumbnail} Couldn't guess file extension mimetype={fileMimetype}, we keep file without extension")
+                    self.writelog(f"[×] idchannel={self.idchannel} filethumbnail={filethumbnail} Couldn't guess file extension mimetype={fileMimetype}, we keep file without extension")
             else:
                 print(f"[×] idchannel={self.idchannel} Response of thumbnail_url {thumbnail_url} isn't OK : {response.status_code} {response.text}")
                 self.writelog(f"[×] idchannel={self.idchannel} Response of thumbnail_url {thumbnail_url} isn't OK : {response.status_code} {response.text}")
@@ -152,10 +165,22 @@ class Program():
                 response = requests.get(bannerExternalUrl, stream = True)
                 if response.status_code == 200:
                     bannerInfosResponse = response.content
-                    filebanner = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_banner.jpeg"
+
+                    # Download file without extension
+                    filebanner = self.output_dirs['result_file'] + "channel_" + self.idchannel + "_" + dateNow['dateFileString'] + "_banner"
                     fbanner = open(filebanner, "wb")
                     fbanner.write(bannerInfosResponse)
                     fbanner.close()
+
+                    # Guess mimetype, guess file extension then rename file with extension
+                    fileMimetype = magic.from_file(filebanner, mime=True)
+                    fileExtension = mimetypes.guess_extension(fileMimetype)
+                    if fileExtension is not None:
+                        newfilebanner = filebanner + fileExtension
+                        os.rename(filebanner, newfilebanner)
+                    else:
+                        print(f"[×] idchannel={self.idchannel} filebanner={filebanner} Couldn't guess file extension mimetype={fileMimetype}, we keep file without extension")
+                        self.writelog(f"[×] idchannel={self.idchannel} filebanner={filebanner} Couldn't guess file extension mimetype={fileMimetype}, we keep file without extension")
                 else:
                     print(f"[×] idchannel={self.idchannel} Response of bannerExternalUrl {bannerExternalUrl} isn't OK : {response.status_code} {response.text}")
                     self.writelog(f"[×] idchannel={self.idchannel} Response of bannerExternalUrl {bannerExternalUrl} isn't OK : {response.status_code} {response.text}")
